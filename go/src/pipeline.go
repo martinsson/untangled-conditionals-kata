@@ -11,9 +11,13 @@ type Pipeline struct {
 func (p *Pipeline) run(project Project) {
 
 	// for stages
-	err := p.runTestStage(project)
+	message, err := p.runTestStage(project)
 	if err == nil {
-		err = p.runDeployStage(project)
+		p.log.info(message)
+		message, err = p.runDeployStage(project)
+		if err == nil {
+			p.log.info(message)
+		}
 	}
 
 	// reporting
@@ -40,27 +44,31 @@ func (p *Pipeline) computeEndResult(err error) string {
 	return endResult
 }
 
-func (p *Pipeline) runTestStage(project Project) error {
+func (p *Pipeline) runTestStage(project Project) (string, error) {
 	err := error(nil)
 	// almost possible to move this to project class, if it wasnt for the lack of logging in the failure case
+	var message = ""
 	if project.hasTests() {
 		if "success" == project.runTests() {
-			p.log.info("Tests passed")
+			message = "Tests passed"
 		} else {
 			err = errors.New("Tests failed")
 		}
 	} else {
-		p.log.info("No tests")
+		message = "No tests"
 	}
-	return err
+
+	return message, err
 }
 
-func (p *Pipeline) runDeployStage(project Project) error {
+func (p *Pipeline) runDeployStage(project Project) (string, error) {
 	err := error(nil)
+	var message = ""
 	if "success" == project.deploy() {
-		p.log.info("Deployment successful")
+		message = "Deployment successful"
+
 	} else {
 		err = errors.New("Deployment failed")
 	}
-	return err
+	return message, err
 }
