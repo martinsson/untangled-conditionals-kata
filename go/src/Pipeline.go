@@ -10,6 +10,7 @@ type Pipeline struct {
 func (p *Pipeline) run(project Project) {
     var testsPassed = false
     var  deploySuccessful = false
+    var endResult = ""
 
     if project.hasTests() {
         if "success" == project.runTests() {
@@ -17,6 +18,7 @@ func (p *Pipeline) run(project Project) {
             testsPassed = true
         } else {
             p.log.error("Tests failed")
+            endResult = "Tests failed"
             testsPassed = false
         }
     } else {
@@ -27,9 +29,11 @@ func (p *Pipeline) run(project Project) {
     if testsPassed {
         if "success" == project.deploy() {
             p.log.info("Deployment successful")
+            endResult = "Deployment completed successfully"
             deploySuccessful = true
         } else {
             p.log.error("Deployment failed")
+            endResult = "Deployment failed"
             deploySuccessful = false
         }
     } else {
@@ -38,15 +42,7 @@ func (p *Pipeline) run(project Project) {
 
     if p.config.sendEmailSummary() {
         p.log.info("Sending email")
-        if testsPassed {
-            if deploySuccessful {
-                p.emailer.send("Deployment completed successfully")
-            } else {
-                p.emailer.send("Deployment failed")
-            }
-        } else {
-            p.emailer.send("Tests failed")
-        }
+        p.emailer.send(endResult)
     } else {
         p.log.info("Email disabled")
     }
