@@ -7,23 +7,14 @@ type Pipeline struct {
 	emailer Emailer
 	log     Logger
 }
+type pipelineStage func(project Project) (string, error)
 
 func (p *Pipeline) run(project Project) {
 
 	// for stages
-	message, err := p.runTestStage(project)
-	if err == nil {
-		p.log.info(message)
-		message, err = p.runDeployStage(project)
-		if err == nil {
-			p.log.info(message)
-		}
-	}
+	stages := []pipelineStage{testStage, deployStage}
 
-	// reporting
-	if err != nil {
-		p.log.error(err.Error())
-	}
+	err := p.runStages(project, stages)
 
 	result := p.computeEndResult(err)
 
@@ -36,6 +27,21 @@ func (p *Pipeline) run(project Project) {
 	}
 }
 
+func (p *Pipeline) runStages(project Project, stages []pipelineStage) error {
+	var err = error(nil)
+	var message = ""
+	for _, stage := range stages {
+		message, err = stage(project)
+		if err != nil {
+			p.log.error(err.Error())
+			break
+		} else {
+			p.log.info(message)
+		}
+	}
+	return err
+}
+
 func (p *Pipeline) computeEndResult(err error) string {
 	var endResult = "Deployment completed successfully"
 	if err != nil {
@@ -44,9 +50,8 @@ func (p *Pipeline) computeEndResult(err error) string {
 	return endResult
 }
 
-func (p *Pipeline) runTestStage(project Project) (string, error) {
+func testStage(project Project) (string, error) {
 	err := error(nil)
-	// almost possible to move this to project class, if it wasnt for the lack of logging in the failure case
 	var message = ""
 	if project.hasTests() {
 		if "success" == project.runTests() {
@@ -61,7 +66,7 @@ func (p *Pipeline) runTestStage(project Project) (string, error) {
 	return message, err
 }
 
-func (p *Pipeline) runDeployStage(project Project) (string, error) {
+func deployStage(project Project) (string, error) {
 	err := error(nil)
 	var message = ""
 	if "success" == project.deploy() {
