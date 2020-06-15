@@ -9,8 +9,8 @@ type Pipeline struct {
 
 func (p *Pipeline) run(project Project) {
     var testsPassed = false
-    var  deploySuccessful = false
-    var endResult = ""
+
+	var endResult = ""
 
     if project.hasTests() {
         if "success" == project.runTests() {
@@ -30,15 +30,15 @@ func (p *Pipeline) run(project Project) {
         if "success" == project.deploy() {
             p.log.info("Deployment successful")
             endResult = "Deployment completed successfully"
-            deploySuccessful = true
-        } else {
+
+		} else {
             p.log.error("Deployment failed")
             endResult = "Deployment failed"
-            deploySuccessful = false
-        }
+
+		}
     } else {
-        deploySuccessful = false
-    }
+
+	}
 
     if p.config.sendEmailSummary() {
         p.log.info("Sending email")
