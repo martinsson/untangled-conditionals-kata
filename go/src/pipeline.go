@@ -1,50 +1,51 @@
 package src
 
+import "errors"
 
 type Pipeline struct {
-    config Config
-    emailer Emailer
-    log Logger
+	config  Config
+	emailer Emailer
+	log     Logger
 }
 
 func (p *Pipeline) run(project Project) {
-    var testsPassed = false
 
-	var endResult = ""
+	var err error = nil
 
-    if project.hasTests() {
-        if "success" == project.runTests() {
-            p.log.info("Tests passed")
-            testsPassed = true
-        } else {
-            p.log.error("Tests failed")
-            endResult = "Tests failed"
-            testsPassed = false
-        }
-    } else {
-        p.log.info("No tests")
-        testsPassed = true
-    }
-
-    if testsPassed {
-        if "success" == project.deploy() {
-            p.log.info("Deployment successful")
-            endResult = "Deployment completed successfully"
+	if project.hasTests() {
+		if "success" == project.runTests() {
+			p.log.info("Tests passed")
 
 		} else {
-            p.log.error("Deployment failed")
-            endResult = "Deployment failed"
+			err = errors.New("Tests failed")
 
 		}
-    } else {
+	} else {
+		p.log.info("No tests")
 
 	}
 
-    if p.config.sendEmailSummary() {
-        p.log.info("Sending email")
-        p.emailer.send(endResult)
-    } else {
-        p.log.info("Email disabled")
-    }
-}
+	if err == nil {
+		if "success" == project.deploy() {
+			p.log.info("Deployment successful")
 
+		} else {
+			err = errors.New("Deployment failed")
+		}
+	} else {
+	}
+
+	var endResult = ""
+	if err != nil {
+		p.log.error(err.Error())
+		endResult = err.Error()
+	} else {
+		endResult = "Deployment completed successfully"
+	}
+	if p.config.sendEmailSummary() {
+		p.log.info("Sending email")
+		p.emailer.send(endResult)
+	} else {
+		p.log.info("Email disabled")
+	}
+}
