@@ -1,19 +1,18 @@
 package src
 
-import "errors"
+type pipelineStage func(project Project) (string, error)
+
+var stages = []pipelineStage{testStage, deployStage}
 
 type Pipeline struct {
 	config  Config
 	emailer Emailer
 	log     Logger
 }
-type pipelineStage func(project Project) (string, error)
 
 func (p *Pipeline) run(project Project) {
 
 	// for stages
-	stages := []pipelineStage{testStage, deployStage}
-
 	err := p.runStages(project, stages)
 
 	result := p.computeEndResult(err)
@@ -48,32 +47,4 @@ func (p *Pipeline) computeEndResult(err error) string {
 		endResult = err.Error()
 	}
 	return endResult
-}
-
-func testStage(project Project) (string, error) {
-	err := error(nil)
-	var message = ""
-	if project.hasTests() {
-		if "success" == project.runTests() {
-			message = "Tests passed"
-		} else {
-			err = errors.New("Tests failed")
-		}
-	} else {
-		message = "No tests"
-	}
-
-	return message, err
-}
-
-func deployStage(project Project) (string, error) {
-	err := error(nil)
-	var message = ""
-	if "success" == project.deploy() {
-		message = "Deployment successful"
-
-	} else {
-		err = errors.New("Deployment failed")
-	}
-	return message, err
 }

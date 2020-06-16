@@ -1,5 +1,7 @@
 package src
 
+import "errors"
+
 type Project struct {
 	buildsSuccessfully bool
 	testStatus         TestStatus
@@ -33,4 +35,32 @@ type ProjectBuilder struct {
 
 func builder() ProjectBuilder {
 	return ProjectBuilder{}
+}
+
+func testStage(project Project) (string, error) {
+	err := error(nil)
+	var message = ""
+	if project.hasTests() {
+		if "success" == project.runTests() {
+			message = "Tests passed"
+		} else {
+			err = errors.New("Tests failed")
+		}
+	} else {
+		message = "No tests"
+	}
+
+	return message, err
+}
+
+func deployStage(project Project) (string, error) {
+	err := error(nil)
+	var message = ""
+	if "success" == project.deploy() {
+		message = "Deployment successful"
+
+	} else {
+		err = errors.New("Deployment failed")
+	}
+	return message, err
 }
